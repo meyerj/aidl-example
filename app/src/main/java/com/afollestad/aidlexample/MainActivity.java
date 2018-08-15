@@ -3,8 +3,11 @@ package com.afollestad.aidlexample;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
@@ -37,6 +40,11 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName className, IBinder service) {
             mLog.append("Service binded!\n");
             mService = IMainService.Stub.asInterface(service);
+            try {
+                mService.registerCallbacks(mBinder);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
 
             performListing();
         }
@@ -77,4 +85,19 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+    public Handler mLogHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            mLog.append(msg.obj.toString());
+        }
+    };
+
+    private final IListener.Stub mBinder = new IListener.Stub() {
+        @Override
+        public void callback() {
+            Message message = Message.obtain(mLogHandler);
+            message.obj = "Callback!\n";
+            message.sendToTarget();
+        }
+    };
 }
